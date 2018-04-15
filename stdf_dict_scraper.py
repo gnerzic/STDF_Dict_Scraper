@@ -5,7 +5,9 @@
 
 from urllib.parse import urljoin, urlparse
 from bs4 import BeautifulSoup
+import html5lib
 import requests
+import pandas as pd
 
 home_url = "http://localhost:8000/home/home.html"
 
@@ -20,7 +22,7 @@ def main():
         # process the content page
         # the links in the page are local urls, so need to be made absolute
         # urls using urljoin
-        # the link in the page use non-htlm slashes which need to be replaced
+        # the link in the page use non-html slashes which need to be replaced
         # finally the url is made lowercase before loading it.
         parse_stdf_dict(urljoin(home_page_request.url, home_soup("a")[1]['href']
                                 .replace("\\", "/").lower()))
@@ -42,19 +44,23 @@ def parse_stdf_dict(content_page_url):
     for content_link in content_soup("a"):
         # ignore breadcrumb links
         if not content_link.parent.has_attr('id') \
-                or content_link.parent['id'] != "breadcrumbs" :
+                or content_link.parent['id'] != "breadcrumbs":
             content_link_url = urljoin(content_page_url, content_link['href']
                                        .replace("\\", "/")).lower()
 
             # based on the type of link call a different function by
-            # - contruct a string that represents the function call
+            # - construct a string that represents the function call
             # - invoke the function call using python's eval function
-            function_name = "parse_" + content_link.text.lower()+"(\""+content_link_url+"\")"
+            function_name = "parse_" + content_link.text.lower() + \
+                            "(\"" + content_link_url + "\")"
             eval(function_name)
 
 
+
 def parse_templates(templates_page_url):
-    print("parse_templates:", templates_page_url)
+    pd_templates = pd.read_html(templates_page_url, header=0)[0]
+    print(pd_templates)
+    print("here")
 
 
 def parse_enumerations(enumerations_page_url):
