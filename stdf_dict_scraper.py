@@ -3,7 +3,9 @@
 # REMEMBER:
 #  run "python -m http.server" on the command line at the root of the dictionary
 
-from urllib.parse import urljoin, urlparse
+from urllib.parse import urljoin, urlparse, urlencode
+from urllib.request import pathname2url
+
 from bs4 import BeautifulSoup
 import html5lib
 import requests
@@ -61,6 +63,28 @@ def parse_templates(templates_page_url):
     pd_templates = pd.read_html(templates_page_url, header=0)[0]
     print(pd_templates)
     print("here")
+
+    pd_template_details = pd.DataFrame()
+    # request page
+    template_page_request = requests.get(templates_page_url)
+    # parse the page with BeautifulSoup
+    template_soup = BeautifulSoup(template_page_request.content, 'lxml')
+
+    # for each anchor link on the page
+    for template_link in template_soup("a"):
+        # ignore breadcrumb links
+        if not template_link.parent.has_attr('id') \
+                or template_link.parent['id'] != "breadcrumbs":
+            template_link_url = urljoin(templates_page_url,
+                                        template_link['href'].replace("\\", "/")).lower().replace(" ", "%20")
+            print("reading", template_link_url)
+            curr_pd_template_details = pd.read_html(template_link_url, header=0)[0]
+
+            curr_pd_template_details.insert(0, "template", template_link.text)
+            pd_template_details = pd_template_details.append(curr_pd_template_details, ignore_index=True)
+
+    print(pd_template_details)
+
 
 
 def parse_enumerations(enumerations_page_url):
