@@ -70,6 +70,9 @@ def parse_templates(templates_page_url):
     # parse the page with BeautifulSoup
     template_soup = BeautifulSoup(template_page_request.content, 'lxml')
 
+    # table = str(template_soup("table")[0])
+    # print(table)
+
     # for each anchor link on the page
     for template_link in template_soup("a"):
         # ignore breadcrumb links
@@ -77,7 +80,7 @@ def parse_templates(templates_page_url):
                 or template_link.parent['id'] != "breadcrumbs":
             template_link_url = urljoin(templates_page_url,
                                         template_link['href'].replace("\\", "/")).lower().replace(" ", "%20")
-            print("reading", template_link_url)
+            print("reading template: ", template_link_url)
 
             template_desc_text, template_detail_structure = parse_individual_template(template_link_url)
             template_detail_structure.insert(0, "template", template_link.text)
@@ -88,7 +91,12 @@ def parse_templates(templates_page_url):
             curr_pd_template_details.insert(1, "template description", template_desc_text)
             pd_template_details = pd_template_details.append(curr_pd_template_details, ignore_index=True)
 
-    print(pd_template_details)
+    writer = pd.ExcelWriter("stdf_dict.xlsx")
+
+    pd_template_details.to_excel(writer, "templates", index=False)
+    pd_template_tab_details.to_excel(writer, "worksheets", index=False)
+
+    writer.save()
 
 
 def parse_individual_template(template_link_url):
@@ -100,7 +108,7 @@ def parse_individual_template(template_link_url):
     indiv_template_soup = BeautifulSoup(indiv_template_page_request.content, 'lxml')
 
     if indiv_template_soup("description"):
-        template_desc = indiv_template_soup("description")[0].text
+        template_desc = indiv_template_soup("description")[0].text.strip()
 
     # for each anchor link on the page
     for template_tab_link in indiv_template_soup("a"):
@@ -111,13 +119,24 @@ def parse_individual_template(template_link_url):
                                         template_tab_link['href'].replace("\\",
                                                                       "/")).lower().replace(
                 " ", "%20")
-            print("reading", tab_link_url)
+
+
+            print("reading tab: ", tab_link_url)
+
+            # request page
+            tab_page_request = requests.get(tab_link_url)
+            # parse the page with BeautifulSoup
+            tab_page_soup = BeautifulSoup(
+                tab_page_request.content, 'lxml')
+            tab_desc = ""
+            if tab_page_soup("description"):
+                tab_desc = tab_page_soup("description")[0].text.strip()
 
             curr_pd_tab_details = pd.read_html(tab_link_url, header=0)[0]
-            curr_pd_tab_details.insert(0, "tab", template_tab_link.text)
+            curr_pd_tab_details.insert(0, "worksheet", template_tab_link.text)
+            curr_pd_tab_details.insert(1, "worksheet description", tab_desc)
             template_tab_details = template_tab_details.append(curr_pd_tab_details, ignore_index=True)
 
-    print(template_tab_details)
     return template_desc, template_tab_details
 
 def parse_enumerations(enumerations_page_url):
