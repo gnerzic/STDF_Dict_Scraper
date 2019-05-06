@@ -4,10 +4,8 @@
 #  run "python -m http.server" on the command line at the root of the dictionary
 
 from urllib.parse import urljoin, urlparse, urlencode
-from urllib.request import pathname2url
 
 from bs4 import BeautifulSoup
-import html5lib
 import requests
 import pandas as pd
 
